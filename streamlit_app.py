@@ -8,22 +8,28 @@ from PIL import Image
 import torch
 import torchvision.models as models
 
+import torch
+import torchvision.models as models
+
 class EfficientNetModel:
     def __init__(self, num_classes):
-        self.model = models.efficientnet_b0(pretrained=False)  # Don't download weights
-        # Load the weights manually
         try:
-            self.model.load_state_dict(torch.load("path/to/efficientnet_b0.pth"))
+            self.model = models.efficientnet_b0(pretrained=False)
+            self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
+            self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'))
+        except FileNotFoundError:
+            print("Model file not found. Please check the path.")
+        except RuntimeError as e:
+            print(f"Error loading model state dict: {e}")
         except Exception as e:
-            print(f"Error loading model weights: {e}")
-        # Modify the final layer to match the number of classes
-        self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
+            print(f"An unexpected error occurred: {e}")
 
     def predict(self, image_tensor):
         self.model.eval()
         with torch.no_grad():
             outputs = self.model(image_tensor)
         return outputs
+
 
 # Instantiate the model and load the state dictionary
 model = EfficientNetModel(num_classes=7)
