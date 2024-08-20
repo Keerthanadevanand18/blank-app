@@ -1,10 +1,36 @@
+import streamlit as st
+import torch
+import torchvision.models as models
+from torchvision import transforms
+from PIL import Image
+
+class EfficientNetModel:
+    def __init__(self, num_classes):
+        self.model = None
+        try:
+            self.model = models.efficientnet_b0(pretrained=True)  # Use pretrained model
+            self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
+            # Uncomment if loading custom weights
+            # self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'), strict=False)
+        except FileNotFoundError as e:
+            st.error(f"Model file not found: {e}")
+        except RuntimeError as e:
+            st.error(f"Error loading model state dict: {e}")
+        except BrokenPipeError as e:
+            st.error(f"Broken pipe error: {e}")
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
 
     def predict(self, image_tensor):
         if self.model:
-            self.model.eval()
-            with torch.no_grad():
-                outputs = self.model(image_tensor)
-            return outputs
+            try:
+                self.model.eval()
+                with torch.no_grad():
+                    outputs = self.model(image_tensor)
+                return outputs
+            except Exception as e:
+                st.error(f"Error during prediction: {e}")
+                return None
         else:
             st.error("Model is not loaded.")
             return None
