@@ -1,4 +1,5 @@
-!pip install torch torchvision
+touch requirements.txt
+
 import streamlit as st
 import torch
 import torch.nn as nn
