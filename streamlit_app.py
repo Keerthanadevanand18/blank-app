@@ -6,13 +6,13 @@ from PIL import Image
 
 @st.cache  
 def load_model(num_classes):  
-   try:  
+ try:  
       model = models.efficientnet_b0(pretrained=True)  
       model.classifier[1] = torch.nn.Linear(model.classifier[1].in_features, num_classes)  
       # Uncomment if loading custom weights  
       # model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'), strict=False)  
       return model  
-   except Exception as e:  
+ except Exception as e:  
       st.error(f"Error loading model: {e}")  
       return None
 
