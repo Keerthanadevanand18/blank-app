@@ -1,71 +1,52 @@
 import streamlit as st
 import torch
-import torch.nn as nn
 import torchvision.models as models
-import torchvision.transforms as transforms
+from torchvision import transforms
 from PIL import Image
+import os
 
-# Define the EfficientNet model
-class EfficientNetModel(nn.Module):
+class EfficientNetModel:
     def __init__(self, num_classes):
-        super(EfficientNetModel, self).__init__()
-        self.model = models.efficientnet_b0(pretrained=True)
-        in_features = self.model.classifier[1].in_features
-        self.model.classifier[1] = nn.Linear(in_features, num_classes)
+        self.model = None
+        try:
+            print("Current working directory:", os.getcwd())
+            self.model = models.efficientnet_b0(pretrained=False)
+            self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
+            self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'))
+        except FileNotFoundError as e:
+            st.error(f"Model file not found: {e}")
+        except RuntimeError as e:
+            st.error(f"Error loading model state dict: {e}")
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
 
-    def forward(self, x):
-        return self.model(x)
+    def predict(self, image_tensor):
+        if self.model:
+            self.model.eval()
+            with torch.no_grad():
+                outputs = self.model(image_tensor)
+            return outputs
+        else:
+            st.error("Model is not loaded.")
+            return None
 
-# Instantiate the model and load the state dictionary
-model = EfficientNetModel(num_classes=7)
-model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'))
-model.eval()  # Set the model to evaluation mode
+st.title("PyTorch and Streamlit Example")
 
-# Define image transformations
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # Adjust based on your model's requirements
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
-
-# Mapping from numeric indices to dx values
-idx_to_dx = {
-    0: 'Melanoma',   
-    1: 'Basal Cell Carcinoma',   
-    2: 'Actinic Keratosis', 
-    3: 'Vascular Lesions',  
-    4: 'Dermatofibroma',    
-    5: 'Nevus',    
-    6: 'Squamous Cell Carcinoma'    
-}
-
-# Clinical suggestions for specific diagnoses
-suggestions = {
-    'Melanoma': "Melanoma is a serious form of skin cancer. If you suspect melanoma, please seek immediate medical consultation. Early detection and treatment are crucial.",
-    'Basal Cell Carcinoma': "Basal Cell Carcinoma (BCC) is a common skin cancer that is generally less aggressive. However, it is still important to have it evaluated and treated by a healthcare professional.",
-    
-}
-
-# Streamlit UI
-st.title('Skin Lesion Classification')
-st.write("Upload an image of a skin lesion and the model will predict the type of lesion.")
-
-uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert('RGB')
-    input_tensor = transform(image).unsqueeze(0)  # Add batch dimension
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Perform inference
-    with torch.no_grad():
-        output = model(input_tensor)
-        prediction_idx = torch.argmax(output, dim=1).item()
-        prediction_label = idx_to_dx[prediction_idx]
+    # Preprocessing
+    transform = transforms.Compose([transforms.Resize(256), transforms.ToTensor()])
+    img_tensor = transform(image).unsqueeze(0)  # Add batch dimension
 
-    st.image(image, caption='Uploaded Image', use_column_width=True)
-    st.write(f'Prediction: {prediction_label}')
-    
-    # Display clinical suggestion
-    if prediction_label in suggestions:
-        st.write(suggestions[prediction_label])
-
+    # Load model
+    model = EfficientNetModel(num_classes=7)
+    if model.model:
+        output = model.predict(img_tensor)
+        if output is not None:
+            st.write(f"Model output: {output}")
+    else:
+        st.write("Model could not be loaded.")
