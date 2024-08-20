@@ -3,16 +3,15 @@ import torch
 import torchvision.models as models
 from torchvision import transforms
 from PIL import Image
-import os
 
 class EfficientNetModel:
     def __init__(self, num_classes):
         self.model = None
         try:
-            print("Current working directory:", os.getcwd())
-            self.model = models.efficientnet_b0(pretrained=False)
+            self.model = models.efficientnet_b0(pretrained=True)  # Use pretrained model
             self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
-            self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'))
+            # Try to load custom weights if necessary
+            # self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'), strict=False)
         except FileNotFoundError as e:
             st.error(f"Model file not found: {e}")
         except RuntimeError as e:
