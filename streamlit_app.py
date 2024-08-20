@@ -4,33 +4,6 @@ import torchvision.models as models
 from torchvision import transforms
 from PIL import Image
 
-@st.cache  
-def load_model(num_classes):  
-   try:  
-      model = models.efficientnet_b0(pretrained=True)  
-      model.classifier[1] = torch.nn.Linear(model.classifier[1].in_features, num_classes)  
-      # Uncomment if loading custom weights  
-      # model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'), strict=False)  
-      return model  
-   except Exception as e:  
-      st.error(f"Error loading model: {e}")  
-      return None
-
-
-class EfficientNetModel:  
-   def __init__(self, num_classes):  
-      self.model = load_model(num_classes)  
-  
-   def predict(self, image_tensor):  
-      if self.model:  
-        self.model.eval()  
-        with torch.no_grad():  
-           outputs = self.model(image_tensor)  
-        return outputs  
-      else:  
-        st.error("Model is not loaded.")  
-        return None
-
 st.title("PyTorch and Streamlit Example")  
   
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png"])  
