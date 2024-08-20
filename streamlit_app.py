@@ -1,4 +1,3 @@
-touch requirements.txt
 
 import streamlit as st
 import torch
