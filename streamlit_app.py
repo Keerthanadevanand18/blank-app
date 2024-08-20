@@ -1,4 +1,3 @@
-
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -6,25 +5,16 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
-class EfficientNetModel:
+# Define the EfficientNet model
+class EfficientNetModel(nn.Module):
     def __init__(self, num_classes):
-        try:
-            self.model = models.efficientnet_b0(pretrained=False)
-            self.model.classifier[1] = torch.nn.Linear(self.model.classifier[1].in_features, num_classes)
-            self.model.load_state_dict(torch.load('efficientnet_model_state_dict.pth'))
-        except FileNotFoundError:
-            print("Model file not found. Please check the path.")
-        except RuntimeError as e:
-            print(f"Error loading model state dict: {e}")
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+        super(EfficientNetModel, self).__init__()
+        self.model = models.efficientnet_b0(pretrained=True)
+        in_features = self.model.classifier[1].in_features
+        self.model.classifier[1] = nn.Linear(in_features, num_classes)
 
-    def predict(self, image_tensor):
-        self.model.eval()
-        with torch.no_grad():
-            outputs = self.model(image_tensor)
-        return outputs
-
+    def forward(self, x):
+        return self.model(x)
 
 # Instantiate the model and load the state dictionary
 model = EfficientNetModel(num_classes=7)
